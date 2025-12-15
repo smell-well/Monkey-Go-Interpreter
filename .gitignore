@@ -49,6 +49,7 @@ __debug_bin
 tmp/
 temp/
 *.tmp
+waiig_code_1.3/
 
 # Log files
 *.log
