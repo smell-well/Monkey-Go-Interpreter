@@ -6,6 +6,7 @@ import (
 	"io"
 	"monkey/lexer"
 	"monkey/parse"
+	"monkey/evaluator"
 )
 
 const MONKEY_FACE = 
@@ -45,7 +46,11 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		fmt.Fprintf(out, "%s\n", program.String())
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			io.WriteString(out, evaluated.Inspect())
+			io.WriteString(out, "\n")
+		}
 	}
 }
 
