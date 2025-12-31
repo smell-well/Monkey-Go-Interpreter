@@ -3,6 +3,7 @@ package object
 import (
 	"bytes"
 	"fmt"
+	"hash/fnv"
 	"monkey/ast"
 )
 
@@ -16,6 +17,7 @@ const (
 	STRING_OBJ       = "STRING"
 	Bulitin_OBJ 	 = "BUILTIN"
 	ARRAY_OBJ		 = "ARRAY"
+	HASH_OBJ		 = "HASH"
 )
 
 type ObjectType string
@@ -26,12 +28,24 @@ type Object interface {
 	Inspect() string
 }
 
+type HashKey struct{
+	Field ObjectType
+	Value uint64
+}
+
+type Hashable interface {
+	HashKey() HashKey
+}
+
 type Integer struct {
 	Value int64
 }
 
 func (i *Integer) Inspect() string  { return fmt.Sprintf("%d", i.Value) }
 func (i *Integer) Type() ObjectType { return INTEGER_OBJ }
+func (i *Integer) HashKey() HashKey {
+	return HashKey{Field: i.Type(), Value: uint64(i.Value)}
+}
 
 type Boolean struct {
 	Value bool
@@ -39,6 +53,15 @@ type Boolean struct {
 
 func (b *Boolean) Inspect() string  { return fmt.Sprintf("%t", b.Value) }
 func (b *Boolean) Type() ObjectType { return BOOLEAN_OBJ }
+func (b *Boolean) HashKey() HashKey {
+	hashKey := HashKey{Field: b.Type()}
+	if b.Value {
+		hashKey.Value = 1
+	} else {
+		hashKey.Value = 0
+	}
+	return hashKey
+}
 
 type Null struct{}
 
@@ -91,6 +114,11 @@ type String struct {
 
 func (s *String) Inspect() string  { return s.Value }
 func (s *String) Type() ObjectType { return STRING_OBJ }
+func (s *String) HashKey() HashKey {
+	h := fnv.New64a()
+	h.Write([]byte(s.Value))
+	return HashKey{Field: s.Type(), Value: h.Sum64()}
+}
 
 type Builtin struct {
 	Fn BuiltinFunction
@@ -115,6 +143,32 @@ func (a *Array) Inspect() string {
 	out.WriteString("[")
 	out.WriteString(fmt.Sprintf("%s", elements))
 	out.WriteString("]")
+
+	return out.String()
+}
+
+type HashPair struct {
+	Key   Object
+	Value Object
+}
+
+type Hash struct {
+	Pairs map[HashKey]HashPair
+}
+
+func (h *Hash) Type() ObjectType { return HASH_OBJ }
+func (h *Hash) Inspect() string {
+	var out bytes.Buffer
+
+	pairs := []string{}
+	for _, pair := range h.Pairs {
+		pairs = append(pairs, fmt.Sprintf("%s: %s",
+			pair.Key.Inspect(), pair.Value.Inspect()))
+	}
+
+	out.WriteString("{")
+	out.WriteString(fmt.Sprintf("%s", pairs))
+	out.WriteString("}")
 
 	return out.String()
 }
