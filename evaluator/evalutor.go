@@ -93,6 +93,14 @@ var (
 				return array
 			},
 		},
+		"put": {
+			Fn: func(args ...object.Object) object.Object {
+				for _, arg := range args {
+					fmt.Println(arg.Inspect())
+				}
+				return NULL
+			},
+		},
 	}
 )
 
